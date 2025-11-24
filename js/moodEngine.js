@@ -2,42 +2,43 @@
 // Pure logic for mapping UI inputs to a worldState that drives visuals + audio.
 
 export const TAG_PRESETS = [
-  { label: 'calm', level: 45, weather: 'cloudy', description: 'Calm day, muted colors and soft sky.' },
-  { label: 'happy', level: 70, weather: 'sunny', description: 'Bright beams and a cheerful villa vibe.' },
-  { label: 'tired', level: 40, weather: 'cloudy', description: 'Dim lights, steady drizzle energy.' },
-  { label: 'stressed', level: 25, weather: 'rain', description: 'Tight deadlines, rain-tapped roof.' },
-  { label: 'burnout', level: 18, weather: 'storm', description: 'Dark clouds, messy ground, thunder looming.' },
-  { label: 'overthinking', level: 35, weather: 'rain', description: 'Rainy loops and flickering street light.' },
-  { label: 'hopeful', level: 65, weather: 'cloudy', description: 'Rebuilding energy, soft light filtering through.' },
-  { label: 'winning', level: 92, weather: 'sunny', description: 'Jackpot mode: villa glow and pool shimmer.' },
+  { label: 'Calm', level: 45, weather: 'cloudy', description: 'Calm day, muted colors and soft sky.' },
+  { label: 'Happy', level: 70, weather: 'sunny', description: 'Bright beams and a cheerful villa vibe.' },
+  { label: 'Tired', level: 40, weather: 'cloudy', description: 'Dim lights, steady drizzle energy.' },
+  { label: 'Stressed', level: 30, weather: 'rain', description: 'Tight deadlines, rain-tapped roof.' },
+  { label: 'Burnout', level: 20, weather: 'storm', description: 'Dark clouds, messy ground, thunder looming.' },
+  { label: 'Overthinking', level: 35, weather: 'rain', description: 'Rainy loops and flickering street light.' },
+  { label: 'Chill Sunday', level: 55, weather: 'sunny', description: 'Cozy house, soft breeze, brunch incoming.' },
+  { label: 'Party Mode', level: 85, weather: 'night', description: 'Neon glow, villa lights, pool ready.' },
+  { label: 'Storm Season', level: 30, weather: 'storm', description: 'Lightning flashes and drenched wood.' },
+  { label: 'Soft Life', level: 75, weather: 'sunny', description: 'Upgraded villa, lazy palm shade.' },
+  { label: 'Lottery Winner', level: 95, weather: 'sunny', description: 'Maxed-out villa and shimmering pool.' },
 ];
 
 export const DEFAULT_STATE = {
   lifeLevel: 50,
   houseTier: 2,
-  weather: 'cloudy',
-  description: 'Balanced vibes, cozy home, muted clouds drifting.',
-  tag: 'calm',
+  weather: 'sunny',
+  description: 'Balanced vibes, cozy home, mild breeze.',
+  tag: 'Calm',
 };
 
 // Translate numeric slider into house tiers.
 export function applySlider(value, currentState = DEFAULT_STATE) {
   const level = clamp(value, 0, 100);
-  const tier = level <= 30 ? 1 : level <= 70 ? 2 : 3;
-  const weather = level <= 30 ? 'storm' : level <= 70 ? 'cloudy' : 'sunny';
+  const tier = level <= 33 ? 1 : level <= 66 ? 2 : 3;
   return {
     ...currentState,
     lifeLevel: level,
     houseTier: tier,
-    weather,
-    description: describeState(tier, weather),
+    description: describeState(tier, currentState.weather),
   };
 }
 
 // Apply mood tag preset.
 export function applyTag(tagLabel, currentState = DEFAULT_STATE) {
   const preset = TAG_PRESETS.find((t) => t.label === tagLabel) || TAG_PRESETS[0];
-  const tier = preset.level <= 30 ? 1 : preset.level <= 70 ? 2 : 3;
+  const tier = preset.level <= 33 ? 1 : preset.level <= 66 ? 2 : 3;
   return {
     ...currentState,
     lifeLevel: preset.level,
@@ -52,7 +53,7 @@ export function applyTag(tagLabel, currentState = DEFAULT_STATE) {
 export function interpretText(input, currentState = DEFAULT_STATE) {
   const text = input.toLowerCase();
   let level = 50;
-  let weather = 'cloudy';
+  let weather = 'sunny';
   const notes = [];
 
   const includes = (words) => words.some((w) => text.includes(w));
@@ -105,7 +106,7 @@ export function interpretText(input, currentState = DEFAULT_STATE) {
     notes.push('Dreaming of pools and palms.');
   }
 
-  const tier = level <= 30 ? 1 : level <= 70 ? 2 : 3;
+  const tier = level <= 33 ? 1 : level <= 66 ? 2 : 3;
   const summary = buildSummary(tier, weather, notes);
 
   return {
