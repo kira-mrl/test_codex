@@ -6,6 +6,7 @@ let worldState = { ...DEFAULT_STATE };
 let canvas;
 let animationId;
 let initializedAudio = false;
+let interpretResultEl;
 
 function init() {
   canvas = document.getElementById('webgl');
@@ -19,6 +20,9 @@ function loop() {
   const delta = getClock().getDelta();
   update(delta, worldState);
   render();
+  if (initializedAudio) {
+    updateAudio(worldState);
+  }
   animationId = requestAnimationFrame(loop);
 }
 
@@ -28,7 +32,7 @@ function setupUI() {
   const tagsContainer = document.getElementById('tags');
   const interpretBtn = document.getElementById('interpretBtn');
   const vibeText = document.getElementById('vibeText');
-  const interpretResult = document.getElementById('interpretResult');
+  interpretResultEl = document.getElementById('interpretResult');
   const stateDescription = document.getElementById('stateDescription');
   const muteBtn = document.getElementById('muteBtn');
 
@@ -39,6 +43,7 @@ function setupUI() {
     btn.addEventListener('click', () => {
       ensureAudio();
       worldState = applyTag(tag.label, worldState);
+      vibeText.value = `${tag.label}, ${tag.description || 'reset mood'}`;
       applyStateToUI(lifeRange, lifeValue, stateDescription);
       buildWorld(worldState);
       updateAudio(worldState);
@@ -59,7 +64,7 @@ function setupUI() {
     ensureAudio();
     worldState = interpretText(vibeText.value, worldState);
     applyStateToUI(lifeRange, lifeValue, stateDescription);
-    interpretResult.textContent = `AI guess: ${worldState.description}`;
+    interpretResultEl.textContent = `AI guess: ${worldState.description}`;
     buildWorld(worldState);
     updateAudio(worldState);
   });
@@ -73,6 +78,7 @@ function setupUI() {
   // initial description
   stateDescription.textContent = worldState.description;
   lifeValue.textContent = worldState.lifeLevel;
+  interpretResultEl.textContent = '';
 }
 
 function applyStateToUI(lifeRange, lifeValue, stateDescription) {

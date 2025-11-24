@@ -5,6 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI LEGO LIFE WEATHER</title>
   <link rel="stylesheet" href="styles.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js"
+      }
+    }
+  </script>
 </head>
 <body>
   <canvas id="webgl"></canvas>
@@ -43,7 +50,7 @@
       <p class="muted">Audio reacts to your life level and weather.</p>
     </section>
   </div>
-
+  <!-- App entrypoint (Three.js is imported as an ES module inside world.js) -->
   <script type="module" src="js/main.js"></script>
 </body>
 </html>

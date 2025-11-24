@@ -1,10 +1,10 @@
 // world.js
 // Three.js scene setup + LEGO-like builder + weather controls.
-import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js';
+import * as THREE from 'three';
 import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/controls/OrbitControls.js';
 
 let scene, camera, renderer, controls;
-let islandGroup, houseGroup, propGroup, particleSystem;
+let islandGroup, houseGroup, propGroup, particleSystem, cloudGroup;
 let directionalLight, fillLight, ambientLight;
 let lightningTimeout = 0;
 let currentWeather = 'sunny';
@@ -23,6 +23,9 @@ export function initWorld(canvas) {
   renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  renderer.outputColorSpace = THREE.SRGBColorSpace;
+  renderer.toneMapping = THREE.ACESFilmicToneMapping;
+  renderer.toneMappingExposure = 1.05;
 
   controls = new OrbitControls(camera, renderer.domElement || canvas);
   controls.target.set(0, 2, 0);
@@ -45,6 +48,7 @@ export function initWorld(canvas) {
   scene.add(fillLight);
 
   scene.fog = new THREE.Fog(0x0c0c11, 18, 50);
+  scene.background = new THREE.Color('#6d7082');
 
   islandGroup = createIsland();
   scene.add(islandGroup);
@@ -71,6 +75,14 @@ function createIsland() {
   const group = new THREE.Group();
   const baseColor = new THREE.Color('#2c2f3a');
   const accent = new THREE.Color('#232531');
+
+  // water plate underlay for blocky contrast
+  const water = new THREE.Mesh(
+    new THREE.CylinderGeometry(islandSize + 4, islandSize + 6, 1, 24),
+    new THREE.MeshStandardMaterial({ color: '#1a2335', roughness: 0.6, metalness: 0.05 })
+  );
+  water.position.y = -0.7;
+  group.add(water);
 
   for (let x = -islandSize; x <= islandSize; x++) {
     for (let z = -islandSize; z <= islandSize; z++) {
@@ -136,7 +148,8 @@ function buildHouseTier2() {
   for (let y = 0; y < height; y++) {
     for (let x = -width / 2; x <= width / 2; x++) {
       for (let z = -depth / 2; z <= depth / 2; z++) {
-        const cube = createCube(palette[(x + z + y) % palette.length], 1);
+        const idx = ((x + z + y) % palette.length + palette.length) % palette.length;
+        const cube = createCube(palette[idx], 1);
         cube.position.set(x, y + 1, z);
         group.add(cube);
       }
@@ -178,7 +191,8 @@ function buildHouseTier3() {
     for (let x = -width / 2; x <= width / 2; x++) {
       for (let z = -depth / 2; z <= depth / 2; z++) {
         if (Math.abs(x) === width / 2 && Math.abs(z) === depth / 2) continue;
-        const cube = createCube(palette[(x + y) % palette.length], 1);
+        const idx = ((x + y) % palette.length + palette.length) % palette.length;
+        const cube = createCube(palette[idx], 1);
         cube.position.set(x, y + 1, z);
         group.add(cube);
       }
@@ -222,6 +236,13 @@ function buildHouseTier3() {
 
 function spawnProps(tier) {
   const group = new THREE.Group();
+  // shared foliage sprinkles
+  for (let i = 0; i < 8; i++) {
+    const bush = createCube('#2f6f4f', 0.6);
+    bush.position.set(-6 + Math.random() * 12, 0.4, -6 + Math.random() * 12);
+    bush.scale.y = 0.6 + Math.random() * 0.4;
+    group.add(bush);
+  }
   if (tier === 1) {
     for (let i = 0; i < 8; i++) {
       const debris = createCube('#3b3b3b', 0.6);
@@ -229,12 +250,20 @@ function spawnProps(tier) {
       debris.rotation.y = Math.random() * Math.PI;
       group.add(debris);
     }
+    const barrel = createCube('#4b3b2a', 0.8);
+    barrel.position.set(-5, 0.5, 4);
+    group.add(barrel);
   }
   if (tier === 2) {
     const bench = createCube('#8b6b52', 0.4);
     bench.scale.set(3.5, 0.5, 1);
     bench.position.set(2, 0.3, -4);
     group.add(bench);
+
+    const mailbox = createCube('#d14a4a', 0.5);
+    mailbox.scale.y = 1.4;
+    mailbox.position.set(-5, 0.35, 5);
+    group.add(mailbox);
   }
   if (tier === 3) {
     const tree = createCube('#2f8f5a', 1.4);
@@ -243,6 +272,11 @@ function spawnProps(tier) {
     trunk.scale.y = 3;
     trunk.position.set(7, 1.2, 3);
     group.add(tree, trunk);
+
+    const path = createCube('#e7e9f2', 0.3);
+    path.scale.set(8, 0.3, 2.5);
+    path.position.set(0, 0.2, -6);
+    group.add(path);
   }
   return group;
 }
@@ -251,9 +285,11 @@ function clearGroups() {
   if (houseGroup) scene.remove(houseGroup);
   if (propGroup) scene.remove(propGroup);
   if (particleSystem) scene.remove(particleSystem);
+  if (cloudGroup) scene.remove(cloudGroup);
   houseGroup = null;
   propGroup = null;
   particleSystem = null;
+  cloudGroup = null;
 }
 
 export function buildWorld(state) {
@@ -313,7 +349,8 @@ function updateWeather(type, lifeLevel) {
     addHalo('#8dd1ff', 1.8);
   }
 
-  buildParticles(type);
+  buildClouds(type);
+  buildParticles(type, lifeLevel);
 }
 
 function addHalo(color, intensity) {
@@ -323,7 +360,28 @@ function addHalo(color, intensity) {
   setTimeout(() => scene.remove(halo), 900);
 }
 
-function buildParticles(type) {
+function buildClouds(type) {
+  if (cloudGroup) scene.remove(cloudGroup);
+  const cloudPalette = {
+    sunny: '#ffffff',
+    cloudy: '#d6dae8',
+    rain: '#b0b4c1',
+    storm: '#7b7f8c',
+    night: '#7f8bb8',
+  };
+  const density = type === 'sunny' ? 3 : type === 'storm' ? 10 : 6;
+  if (type === 'snow') return; // snow uses falling particles only
+  cloudGroup = new THREE.Group();
+  for (let i = 0; i < density; i++) {
+    const cloud = createCube(cloudPalette[type] || '#d6dae8', 2 + Math.random() * 1.5);
+    cloud.scale.y = 0.5;
+    cloud.position.set(-8 + Math.random() * 16, 9 + Math.random() * 4, -8 + Math.random() * 16);
+    cloudGroup.add(cloud);
+  }
+  scene.add(cloudGroup);
+}
+
+function buildParticles(type, lifeLevel) {
   if (particleSystem) scene.remove(particleSystem);
 
   if (type === 'rain' || type === 'storm') {
@@ -354,6 +412,20 @@ function buildParticles(type) {
     particleSystem = new THREE.Points(geometry, material);
     particleSystem.userData.type = 'snow';
     scene.add(particleSystem);
+  } else if (type === 'sunny' && lifeLevel > 75) {
+    const count = 120;
+    const geometry = new THREE.BufferGeometry();
+    const positions = new Float32Array(count * 3);
+    for (let i = 0; i < count; i++) {
+      positions[i * 3] = (Math.random() - 0.5) * 14;
+      positions[i * 3 + 1] = Math.random() * 8 + 2;
+      positions[i * 3 + 2] = (Math.random() - 0.5) * 14;
+    }
+    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+    const material = new THREE.PointsMaterial({ color: '#fff6d1', size: 0.06, transparent: true, opacity: 0.9 });
+    particleSystem = new THREE.Points(geometry, material);
+    particleSystem.userData.type = 'sparkle';
+    scene.add(particleSystem);
   }
 }
 
@@ -368,6 +440,8 @@ function updateParticles(delta) {
       positions[i + 1] -= 6 * delta;
       positions[i] += Math.sin(positions[i + 1] + i) * 0.02;
       if (positions[i + 1] < 0) positions[i + 1] = 12;
+    } else if (particleSystem.userData.type === 'sparkle') {
+      positions[i + 1] += Math.sin(clock.getElapsedTime() + i) * 0.01;
     }
   }
   particleSystem.geometry.attributes.position.needsUpdate = true;
