@@ -1,5 +1,7 @@
 // world.js
 // Three.js scene setup + LEGO-like builder + weather controls.
+import * as THREE from 'https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js';
+import { OrbitControls } from 'https://cdn.jsdelivr.net/npm/three@0.152.2/examples/jsm/controls/OrbitControls.js';
 
 let scene, camera, renderer, controls;
 let islandGroup, houseGroup, propGroup, particleSystem;
@@ -22,7 +24,7 @@ export function initWorld(canvas) {
   renderer.setSize(window.innerWidth, window.innerHeight);
   renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-  controls = new THREE.OrbitControls(camera, canvas);
+  controls = new OrbitControls(camera, renderer.domElement || canvas);
   controls.target.set(0, 2, 0);
   controls.enableDamping = true;
   controls.minDistance = 10;
