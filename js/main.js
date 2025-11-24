@@ -39,7 +39,6 @@ function setupUI() {
     btn.addEventListener('click', () => {
       ensureAudio();
       worldState = applyTag(tag.label, worldState);
-      vibeText.value = `${tag.label}, ${tag.description || 'reset mood'}`;
       applyStateToUI(lifeRange, lifeValue, stateDescription);
       buildWorld(worldState);
       updateAudio(worldState);
