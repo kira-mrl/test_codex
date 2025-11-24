@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI LEGO LIFE WEATHER</title>
+  <link rel="stylesheet" href="styles.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.152.2/build/three.module.js"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="webgl"></canvas>
+  <div id="ui">
+    <header>
+      <h1>AI LEGO LIFE WEATHER</h1>
+      <p>Dial your life level, mood, weather, and watch the island react.</p>
+    </header>
+
+    <section class="control">
+      <label for="lifeRange">Life Level <span id="lifeValue">50</span></label>
+      <input type="range" id="lifeRange" min="0" max="100" value="50" />
+    </section>
+
+    <section class="control">
+      <h3>Mood presets</h3>
+      <div id="tags" class="tags"></div>
+    </section>
+
+    <section class="control">
+      <h3>Free text vibe</h3>
+      <div class="text-input">
+        <input type="text" id="vibeText" placeholder="e.g. 9–5 grind but dreaming pool & palm trees" />
+        <button id="interpretBtn">INTERPRET</button>
+      </div>
+      <p id="interpretResult" class="muted"></p>
+    </section>
+
+    <section class="control state">
+      <h3>State</h3>
+      <p id="stateDescription">Loading island ...</p>
+    </section>
+
+    <section class="control audio">
+      <button id="muteBtn">🔈 Mute / Unmute</button>
+      <p class="muted">Audio reacts to your life level and weather.</p>
+    </section>
+  </div>
+  <!-- App entrypoint (Three.js is imported as an ES module inside world.js) -->
+  <script type="module" src="js/main.js"></script>
+</body>
+</html>
